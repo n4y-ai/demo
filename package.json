@@ -1,0 +1,40 @@
+{
+  "name": "n4y",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js",
+    "setup-env": "node scripts/setup-env.js",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "dev:backend": "cd backend-service && NETWORK_RPC_URL=http://127.0.0.1:8545 node server.js",
+    "dev:frontend": "cd front-demo && NEXT_PUBLIC_USE_LOCAL_NODE=true npm run dev",
+    "dev:all": "concurrently -k \"npm:node\" \"npm:dev:backend\" \"npm:deploy:local\" \"npm:dev:frontend\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "dotenv": "^17.2.2",
+    "ethers": "^6.15.0"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
+    "@nomicfoundation/hardhat-ethers": "^3.1.0",
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@nomicfoundation/hardhat-verify": "^2.1.1",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
+    "chai": "^4.5.0",
+    "hardhat": "^2.26.3",
+    "hardhat-gas-reporter": "^2.3.0",
+    "solidity-coverage": "^0.8.16",
+    "typechain": "^8.3.2",
+    "concurrently": "^8.2.2"
+  }
+}
