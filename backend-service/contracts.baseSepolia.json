@@ -1,0 +1,11 @@
+{
+  "network": "baseSepolia",
+  "chainId": 84532,
+  "rpcUrl": "https://sepolia.base.org",
+  "contracts": {
+    "QIToken": "0xCCA5BcC719A97CD5099CEc3E2fd9ADc7D6A85B37",
+    "QiBank": "0x4634A6C961Ce57277A6e501355570261293c10D6",
+    "LogosRegistry": "0x6291838976C86D7D17B3a96EA46FA20AEf0E5552",
+    "TaskManager": "0x343C542DFaA3d8857A55CF88E3ce3D174a3007BD"
+  }
+}

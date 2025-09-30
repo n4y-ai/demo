@@ -12,25 +12,44 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Pinata IPFS Configuration (Reliable, well-established service)
-const PINATA_BASE_URL = 'https://api.pinata.cloud';
-const PINATA_UPLOADS_URL = 'https://uploads.pinata.cloud';
+// Pinata v1 API - PUBLIC IPFS pinning
 const PINATA_JWT = process.env.PINATA_JWT;
+const IPFS_GATEWAY = 'https://ipfs.io';
 
 if (!PINATA_JWT) {
-  console.warn('⚠️ PINATA_JWT not found in environment variables');
-  console.warn('The service will fall back to generating mock IPFS hashes');
-  console.warn('💡 Pinata provides free IPFS storage with excellent API');
-  console.warn('💡 Get JWT from: https://app.pinata.cloud/developers/api-keys');
+  console.warn('⚠️ PINATA_JWT not found');
+  console.warn('Get JWT from: https://app.pinata.cloud');
+  console.warn('Files will use fallback hashes');
 } else {
-  console.log('🔑 Pinata JWT found:', PINATA_JWT.substring(0, 20) + '...');
-  console.log('🔑 Token length:', PINATA_JWT.length);
-  console.log('🔑 Is JWT format:', PINATA_JWT.startsWith('eyJ'));
+  console.log('🔑 Pinata JWT found');
 }
 
 // Blockchain configuration
-const provider = new ethers.JsonRpcProvider(process.env.NETWORK_RPC_URL);
+const rpcUrl = process.env.NETWORK_RPC_URL || 'http://127.0.0.1:8545';
+const provider = new ethers.JsonRpcProvider(rpcUrl);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+// Display network info on startup
+(async () => {
+  try {
+    const network = await provider.getNetwork();
+    const networkNames = {
+      31337: 'Hardhat Local',
+      1337: 'Localhost', 
+      84532: 'Base Sepolia',
+      8453: 'Base Mainnet'
+    };
+    const chainId = Number(network.chainId);
+    console.log('🔗 Connected to blockchain');
+    console.log('🌐 Network:', networkNames[chainId] || 'Unknown', '(Chain ID:', chainId + ')');
+    console.log('📡 RPC:', rpcUrl);
+    console.log('👤 Wallet:', wallet.address);
+    const balance = await provider.getBalance(wallet.address);
+    console.log('💰 Balance:', ethers.formatEther(balance), 'ETH');
+  } catch (error) {
+    console.error('❌ Failed to connect to blockchain:', error.message);
+  }
+})();
 
 // Task storage (simple JSON file for MVP)
 const TASKS_FILE = './data/tasks.json';
@@ -70,28 +89,31 @@ app.get('/api/tasks', (req, res) => {
   res.json(tasks);
 });
 
-// AI Task Processing with DeepSeek API
+// AI Task Processing with configurable API provider
 async function processTaskWithAI(taskDescription) {
   try {
-    const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
-    const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY; // Fallback to OpenAI if available
+    // Configurable API settings - supports DeepSeek, OpenAI, or custom providers
+    const API_URL = process.env.AI_API_URL || 'https://api.deepseek.com/v1/chat/completions';
+    const apiKey = process.env.AI_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
+    const modelName = process.env.AI_MODEL_NAME || 'deepseek-chat';
 
     if (!apiKey) {
-      throw new Error('DEEPSEEK_API_KEY or OPENAI_API_KEY environment variable is required');
+      throw new Error('AI_API_KEY (or DEEPSEEK_API_KEY/OPENAI_API_KEY) environment variable is required');
     }
 
-    console.log('🔑 Making DeepSeek API request...');
-    console.log('📡 URL:', DEEPSEEK_API_URL);
+    console.log('🔑 Making AI API request...');
+    console.log('📡 URL:', API_URL);
+    console.log('🤖 Model:', modelName);
     console.log('🔒 API Key length:', apiKey.length);
 
-    const response = await fetch(DEEPSEEK_API_URL, {
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'deepseek-chat', // or 'deepseek-coder' for coding tasks
+        model: modelName,
         messages: [
           {
             role: 'system',
@@ -121,12 +143,12 @@ async function processTaskWithAI(taskDescription) {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('❌ DeepSeek API Error Response:', errorData);
-      throw new Error(`DeepSeek API error: ${response.status} - ${errorData}`);
+      console.error('❌ AI API Error Response:', errorData);
+      throw new Error(`AI API error: ${response.status} - ${errorData}`);
     }
 
     const data = await response.json();
-    console.log('✅ DeepSeek API Response received successfully');
+    console.log('✅ AI API Response received successfully');
     return data.choices[0].message.content;
   } catch (error) {
     console.error('Error processing task with AI:', error);
@@ -134,101 +156,59 @@ async function processTaskWithAI(taskDescription) {
   }
 }
 
-// Pinata IPFS Upload (Reliable and well-established)
+// Pinata v1 PUBLIC pinning API
 async function storeResultOnIPFS(result) {
   try {
     if (!PINATA_JWT) {
-      throw new Error('PINATA_JWT environment variable is required');
+      console.warn('⚠️ No Pinata JWT, using fallback');
+      const crypto = await import('crypto');
+      const hash = crypto.createHash('sha256').update(result).digest();
+      return 'bafy' + Array.from(hash.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 50);
     }
 
-    console.log('📦 Uploading to Pinata IPFS...');
-    console.log('📋 Content preview:', result.substring(0, 100) + '...');
+    console.log('📦 Uploading to PUBLIC IPFS via Pinata...');
 
-    // Create a simple file for upload
-    const timestamp = new Date().toISOString();
-    const filename = `n4y-task-result-${Date.now()}.json`;
+    const pinataData = {
+      pinataContent: {
+        result: result,
+        timestamp: new Date().toISOString(),
+        version: '1.0'
+      },
+      pinataMetadata: {
+        name: `n4y-task-${Date.now()}.json`
+      }
+    };
 
-    const fileContent = JSON.stringify({
-      result: result,
-      timestamp: timestamp,
-      version: '1.0',
-      uploadedBy: 'N4Y Backend Service',
-      description: 'AI-generated task completion result'
-    }, null, 2);
-
-    // Pinata v3 API uses /files endpoint
-    console.log('🚀 Starting Pinata v3 upload...');
-
-    // Create proper FormData for Node.js
-    const FormData = (await import('form-data')).default;
-    const formData = new FormData();
-    formData.append('file', Buffer.from(fileContent), {
-      filename: filename,
-      contentType: 'application/json'
-    });
-
-    // Pinata v3 API endpoint for file uploads
-    const response = await fetch(`${PINATA_UPLOADS_URL}/v3/files`, {
+    const response = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${PINATA_JWT}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PINATA_JWT}`
       },
-      body: formData
+      body: JSON.stringify(pinataData)
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Response status:', response.status);
-      console.error('❌ Response headers:', Object.fromEntries(response.headers.entries()));
-      console.error('❌ Error body:', errorText);
-
-      // Provide specific guidance for common errors
-      if (response.status === 403) {
-        console.error('\n🔧 PINATA 403 ERROR - MISSING PERMISSIONS!');
-        console.error('💡 Solution: Your API key needs "org:files:write" permission');
-        console.error('💡 Go to: https://app.pinata.cloud/developers/api-keys');
-        console.error('💡 Find your key → Edit → Enable "org:files:write" → Save');
-        console.error('💡 Then copy the new JWT token to your .env file');
-      }
-
-      throw new Error(`Pinata API error: ${response.status} - ${errorText}`);
+      throw new Error(`Pinata error: ${response.status} - ${errorText}`);
     }
 
-    const uploadResult = await response.json();
-    console.log('✅ Upload successful!');
-    console.log('📦 Response:', JSON.stringify(uploadResult, null, 2));
-
-    // Pinata v3 returns the CID as `cid`; keep fallbacks
-    const cid = uploadResult.cid || uploadResult?.data?.cid || uploadResult.IpfsHash;
-    if (!cid) {
-      throw new Error('Pinata response did not include a CID');
-    }
-    console.log('🔗 IPFS CID:', cid);
+    const data = await response.json();
+    const cid = data.IpfsHash;
+    
+    console.log('✅ PINNED TO PUBLIC IPFS!');
+    console.log('🔗 CID:', cid);
+    console.log('🌐 PUBLIC URLs (accessible anywhere):');
+    console.log('   - ' + IPFS_GATEWAY + '/ipfs/' + cid);
+    console.log('   - https://cloudflare-ipfs.com/ipfs/' + cid);
+    console.log('   - https://dweb.link/ipfs/' + cid);
 
     return cid;
   } catch (error) {
-    console.error('❌ Pinata upload failed:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      tokenExists: !!PINATA_JWT,
-      tokenLength: PINATA_JWT?.length || 0,
-      tokenPreview: PINATA_JWT?.substring(0, 20) + '...'
-    });
-
-    // Fallback: Generate a realistic hash for demo
-    console.log('⚠️ Using fallback hash generation...');
+    console.error('❌ Upload failed:', error.message);
     const crypto = await import('crypto');
-
-    const hash = crypto.createHash('sha256');
-    hash.update(result);
-    const hashBytes = hash.digest();
-
-    const fallbackHash = 'bafy' + Array.from(hashBytes.slice(0, 32))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
-      .slice(0, 50);
-
+    const hash = crypto.createHash('sha256').update(result).digest();
+    const fallbackHash = 'bafy' + Array.from(hash.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 50);
     console.log('🔗 Fallback hash:', fallbackHash);
     return fallbackHash;
   }

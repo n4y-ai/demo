@@ -71,3 +71,5 @@ coverage.json
 # Temporary files
 tmp/
 temp/
+
+developments/

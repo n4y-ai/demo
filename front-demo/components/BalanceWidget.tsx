@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Wallet, Coins, Plus, HelpCircle, RefreshCw, AlertCircle } from 'lucide-react';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
+import { useQIBalance } from '@/hooks/useContracts';
 import { useAccount } from 'wagmi';
 
 interface BalanceWidgetProps {
@@ -11,9 +12,12 @@ interface BalanceWidgetProps {
 
 export default function BalanceWidget({}: BalanceWidgetProps) {
   const [animateBalance, setAnimateBalance] = useState(false);
-  const [showFaucetInfo, setShowFaucetInfo] = useState(false);
   const { address, chain } = useAccount();
-  const { native, qi, isLoading, error } = useWalletBalance();
+  const { native, isLoading: nativeLoading, error: nativeError } = useWalletBalance();
+  const { formatted: qi, isLoading: qiLoading } = useQIBalance();
+  
+  const isLoading = nativeLoading || qiLoading;
+  const error = nativeError;
 
   // Animate balance changes
   useEffect(() => {

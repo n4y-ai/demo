@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
+    "listen": "node contract-listener.js",
     "dev": "node server.js",
     "test": "echo \"No tests yet\" && exit 0"
   },
@@ -14,7 +15,7 @@
     "dotenv": "^16.3.1",
     "ethers": "^6.15.0",
     "express": "^4.18.2",
-    "node-fetch": "^3.3.2",
-    "form-data": "^4.0.0"
+    "form-data": "^4.0.0",
+    "node-fetch": "^3.3.2"
   }
 }

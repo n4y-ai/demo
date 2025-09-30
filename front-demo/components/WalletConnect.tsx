@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi';
 import { Wallet, ChevronDown, ExternalLink, AlertTriangle, Globe, Zap } from 'lucide-react';
-import { SUPPORTED_CHAINS, NETWORK_CONFIG, hardhatLocal } from '@/lib/wagmi';
+import { SUPPORTED_CHAINS, NETWORK_CONFIG, hardhatLocal, DEFAULT_CHAIN } from '@/lib/wagmi';
 import { baseSepolia, base } from 'wagmi/chains';
 
 export default function WalletConnect() {
   const [showConnectors, setShowConnectors] = useState(false);
   const [showNetworks, setShowNetworks] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const connectorsRef = useRef<HTMLDivElement>(null);
   const networksRef = useRef<HTMLDivElement>(null);
   const { address, isConnected } = useAccount();
@@ -19,6 +20,11 @@ export default function WalletConnect() {
 
   const currentChain = SUPPORTED_CHAINS.find(chain => chain.id === chainId);
   const isUnsupportedNetwork = !currentChain;
+
+  // Prevent hydration errors
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -36,7 +42,7 @@ export default function WalletConnect() {
   }, []);
 
   const handleConnect = (connector: any) => {
-    connect({ connector });
+    connect({ connector, chainId: DEFAULT_CHAIN.id });
     setShowConnectors(false);
   };
 
@@ -61,6 +67,16 @@ export default function WalletConnect() {
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
+
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg flex items-center space-x-2 transition-colors">
+        <Wallet className="w-5 h-5" />
+        <span>Connect Wallet</span>
+      </button>
+    );
+  }
 
   if (isConnected && address) {
     return (

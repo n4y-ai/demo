@@ -1,16 +1,16 @@
 import { Clock, ExternalLink } from 'lucide-react';
-import { EventEntry } from '@/lib/types';
+import { useBlockchainEvents, BlockchainEvent } from '@/hooks/useBlockchainEvents';
 
-interface EventFeedProps {
-  events: EventEntry[];
-}
-
-export default function EventFeed({ events }: EventFeedProps) {
-  const getEventIcon = (type: EventEntry['type']) => {
+export default function EventFeed() {
+  const { events } = useBlockchainEvents();
+  
+  const getEventIcon = (type: BlockchainEvent['type']) => {
     const iconClass = "w-3 h-3";
     switch (type) {
       case 'logos_created':
         return <div className={`${iconClass} bg-purple-400 rounded-full`} />;
+      case 'task_created':
+        return <div className={`${iconClass} bg-cyan-400 rounded-full`} />;
       case 'task_assigned':
         return <div className={`${iconClass} bg-blue-400 rounded-full`} />;
       case 'task_fulfilled':
