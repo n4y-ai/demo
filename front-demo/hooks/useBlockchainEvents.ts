@@ -24,7 +24,7 @@ export function useBlockchainEvents() {
     const fetchEvents = async () => {
       try {
         const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = currentBlock > 100n ? currentBlock - 100n : 0n;
+        const fromBlock = currentBlock > BigInt(100) ? currentBlock - BigInt(100) : BigInt(0);
 
         // Fetch LOGOS created events
         const logosLogs = await publicClient.getLogs({

@@ -88,8 +88,8 @@ export default function TaskItem({ taskId }: TaskItemProps) {
             {taskData.description || 'No description'}
           </p>
           <div className="flex items-center space-x-4 text-xs text-gray-400">
-            <span>Fee: {formatEther(taskData.feeAmount || 0n)} ETH</span>
-            <span>QI: {formatEther(taskData.qiBudget || 0n)}</span>
+            <span>Fee: {formatEther(taskData.feeAmount || BigInt(0))} ETH</span>
+            <span>QI: {formatEther(taskData.qiBudget || BigInt(0))}</span>
           </div>
         </div>
         
