@@ -1,6 +1,7 @@
 import { createConfig, http } from 'wagmi'
 import { base, baseSepolia, localhost } from 'wagmi/chains'
 import { coinbaseWallet, metaMask, walletConnect } from 'wagmi/connectors'
+import type { Chain } from 'wagmi/chains'
 
 // Custom Hardhat local chain configuration
 export const hardhatLocal = {
@@ -12,18 +13,18 @@ export const hardhatLocal = {
       http: ['http://127.0.0.1:8545']
     }
   }
-} as const
+} as const satisfies Chain
 
 // Determine which chains to use based on environment
-const getChains = () => {
+const getChains = (): readonly [Chain, ...Chain[]] => {
   const isDev = process.env.NODE_ENV === 'development'
   const useLocal = process.env.NEXT_PUBLIC_USE_LOCAL_NODE === 'true'
   
   if (isDev && useLocal) {
-    return [hardhatLocal, baseSepolia, base]
+    return [hardhatLocal, baseSepolia, base] as const
   }
   
-  return [baseSepolia, base]
+  return [baseSepolia, base] as const
 }
 
 export const config = createConfig({
@@ -62,7 +63,12 @@ export const getDefaultChain = () => {
 export const DEFAULT_CHAIN = getDefaultChain()
 
 // Network configuration helpers
-export const NETWORK_CONFIG = {
+export const NETWORK_CONFIG: Record<number, {
+  name: string;
+  explorer: string | null;
+  faucet: string | null;
+  description: string;
+}> = {
   [hardhatLocal.id]: {
     name: 'Local Hardhat',
     explorer: null,

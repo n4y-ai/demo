@@ -18,7 +18,7 @@ export const getMockTasks = (): Task[] => [
   {
     id: '2',
     description: 'Write technical documentation for smart contract integration',
-    bounty: '0.05',
+    fee: '0.05',
     qiBudget: '25',
     status: 'In Progress',
     createdAt: new Date(Date.now() - 1800000),
@@ -27,7 +27,7 @@ export const getMockTasks = (): Task[] => [
   {
     id: '3',
     description: 'Design a user interface mockup for NFT marketplace',
-    bounty: '0.08',
+    fee: '0.08',
     qiBudget: '40',
     status: 'Created',
     createdAt: new Date(Date.now() - 900000),
