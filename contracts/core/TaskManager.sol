@@ -20,7 +20,7 @@ contract TaskManager is ReentrancyGuard, Pausable, Ownable {
         address creator;         // User who created task
         uint256 assignedLOGOS;   // LOGOS agent ID assigned
         string description;      // Task description
-        uint256 bountyAmount;    // ETH bounty
+        uint256 feeAmount;       // ETH fee for network operations
         uint256 qiBudget;        // QI tokens allocated
         TaskStatus status;
         uint256 createdAt;
@@ -33,9 +33,8 @@ contract TaskManager is ReentrancyGuard, Pausable, Ownable {
     QiBank public immutable qiBank;
     
     // Configuration
-    uint256 public constant MIN_BOUNTY = 0.001 ether;
-    uint256 public constant MAX_BOUNTY = 10 ether;
-    uint256 public platformFeePercent = 5; // 5%
+    uint256 public constant MIN_FEE = 0.001 ether;
+    uint256 public constant MAX_FEE = 10 ether;
     
     // Storage
     mapping(uint256 => Task) public tasks;
@@ -46,14 +45,13 @@ contract TaskManager is ReentrancyGuard, Pausable, Ownable {
     event TaskCreated(
         uint256 indexed taskId, 
         address indexed creator, 
-        uint256 bounty, 
+        uint256 fee, 
         uint256 qiBudget
     );
     event TaskAssigned(uint256 indexed taskId, uint256 indexed logosId);
     event TaskFulfilled(uint256 indexed taskId, string resultIPFS);
     event TaskCancelled(uint256 indexed taskId);
-    event BountyClaimed(uint256 indexed taskId, address indexed recipient, uint256 amount);
-    event PlatformFeeUpdated(uint256 newFeePercent);
+    event FeeClaimed(uint256 indexed taskId, uint256 amount);
     
     constructor(address _logosRegistry, address _qiBank) Ownable(msg.sender) {
         require(_logosRegistry != address(0), "TaskManager: Invalid registry");
@@ -64,7 +62,7 @@ contract TaskManager is ReentrancyGuard, Pausable, Ownable {
     }
     
     /**
-     * @dev Create a new task with ETH bounty and QI budget
+     * @dev Create a new task with ETH fee and QI budget
      */
     function createTask(
         string memory description,
@@ -72,7 +70,7 @@ contract TaskManager is ReentrancyGuard, Pausable, Ownable {
         uint256 deadline
     ) external payable nonReentrant whenNotPaused returns (uint256) {
         require(bytes(description).length > 0, "TaskManager: Description required");
-        require(msg.value >= MIN_BOUNTY && msg.value <= MAX_BOUNTY, "TaskManager: Invalid bounty");
+        require(msg.value >= MIN_FEE && msg.value <= MAX_FEE, "TaskManager: Invalid fee");
         require(qiBudget > 0, "TaskManager: QI budget required");
         require(deadline > block.timestamp, "TaskManager: Invalid deadline");
         
@@ -87,7 +85,7 @@ contract TaskManager is ReentrancyGuard, Pausable, Ownable {
             creator: msg.sender,
             assignedLOGOS: 0,
             description: description,
-            bountyAmount: msg.value,
+            feeAmount: msg.value,
             qiBudget: qiBudget,
             status: TaskStatus.Created,
             createdAt: block.timestamp,
@@ -141,38 +139,29 @@ contract TaskManager is ReentrancyGuard, Pausable, Ownable {
     }
     
     /**
-     * @dev Claim bounty after task fulfillment
+     * @dev Claim fee after task fulfillment (platform receives 100%, Logos receives 0%)
      */
-    function claimBounty(uint256 taskId) 
+    function claimFee(uint256 taskId) 
         external 
         onlyAuthorized 
         nonReentrant 
     {
         Task storage task = tasks[taskId];
         require(task.status == TaskStatus.Fulfilled, "TaskManager: Not fulfilled");
-        require(task.bountyAmount > 0, "TaskManager: No bounty");
+        require(task.feeAmount > 0, "TaskManager: No fee");
         
-        uint256 platformFee = (task.bountyAmount * platformFeePercent) / 100;
-        uint256 payoutAmount = task.bountyAmount - platformFee;
+        uint256 feeAmount = task.feeAmount;
         
-        // Get LOGOS smart account
-        LogosRegistry.LogosAgent memory logos = logosRegistry.getLOGOS(task.assignedLOGOS);
+        // Update LOGOS stats (no payout, just tracking)
+        logosRegistry.recordTaskCompletion(task.assignedLOGOS, 0);
         
-        // Update LOGOS stats
-        logosRegistry.recordTaskCompletion(task.assignedLOGOS, payoutAmount);
+        // Platform claims full fee
+        task.feeAmount = 0;
         
-        // Transfer bounty
-        task.bountyAmount = 0;
+        (bool feeSuccess, ) = owner().call{value: feeAmount}("");
+        require(feeSuccess, "TaskManager: Fee transfer failed");
         
-        if (platformFee > 0) {
-            (bool feeSuccess, ) = owner().call{value: platformFee}("");
-            require(feeSuccess, "TaskManager: Fee transfer failed");
-        }
-        
-        (bool payoutSuccess, ) = logos.smartAccount.call{value: payoutAmount}("");
-        require(payoutSuccess, "TaskManager: Payout failed");
-        
-        emit BountyClaimed(taskId, logos.smartAccount, payoutAmount);
+        emit FeeClaimed(taskId, feeAmount);
     }
     
     /**
@@ -188,9 +177,9 @@ contract TaskManager is ReentrancyGuard, Pausable, Ownable {
         
         task.status = TaskStatus.Cancelled;
         
-        // Refund bounty
-        uint256 refundAmount = task.bountyAmount;
-        task.bountyAmount = 0;
+        // Refund fee
+        uint256 refundAmount = task.feeAmount;
+        task.feeAmount = 0;
         
         // Refund unused QI
         qiBank.refundUnusedQI(taskId, msg.sender);
@@ -222,15 +211,6 @@ contract TaskManager is ReentrancyGuard, Pausable, Ownable {
      */
     function getLogosTasks(uint256 logosId) external view returns (uint256[] memory) {
         return logosTasks[logosId];
-    }
-    
-    /**
-     * @dev Update platform fee
-     */
-    function setPlatformFee(uint256 newFeePercent) external onlyOwner {
-        require(newFeePercent <= 20, "TaskManager: Fee too high"); // Max 20%
-        platformFeePercent = newFeePercent;
-        emit PlatformFeeUpdated(newFeePercent);
     }
     
     /**

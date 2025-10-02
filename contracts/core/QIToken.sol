@@ -45,10 +45,10 @@ contract QIToken is ERC20, Ownable {
     }
     
     /**
-     * @dev Burn tokens from the contract balance
+     * @dev Burn tokens from the caller's balance (authorized contracts like QiBank)
      */
     function burn(uint256 amount) external onlyAuthorized {
-        _burn(address(this), amount);
+        _burn(msg.sender, amount);
         emit TokensBurned(msg.sender, amount);
     }
     

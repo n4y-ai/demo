@@ -76,7 +76,7 @@ describe("N4Y Contracts", function () {
     });
     
     it("Should create a task", async function () {
-      const bounty = ethers.parseEther("0.1");
+      const fee = ethers.parseEther("0.1");
       const qiBudget = ethers.parseEther("100");
       const deadline = Math.floor(Date.now() / 1000) + 86400; // 1 day
       
@@ -84,18 +84,20 @@ describe("N4Y Contracts", function () {
         "Analyze this data",
         qiBudget,
         deadline,
-        { value: bounty }
+        { value: fee }
       );
       
       const task = await taskManager.getTask(1);
       expect(task.creator).to.equal(user1.address);
-      expect(task.bountyAmount).to.equal(bounty);
+      expect(task.feeAmount).to.equal(fee);
       expect(task.qiBudget).to.equal(qiBudget);
     });
     
-    it("Should allocate QI budget", async function () {
+    it("Should allocate QI budget with 75% burn", async function () {
       const qiBudget = ethers.parseEther("100");
       const deadline = Math.floor(Date.now() / 1000) + 86400;
+      
+      const initialSupply = await qiToken.totalSupply();
       
       await taskManager.connect(user1).createTask(
         "Test task",
@@ -107,6 +109,15 @@ describe("N4Y Contracts", function () {
       const budget = await qiBank.getBudget(1);
       expect(budget.allocated).to.equal(qiBudget);
       expect(budget.isActive).to.be.true;
+      
+      // Check that 75% was burned (remaining should be 25%)
+      const expectedRemaining = qiBudget * BigInt(25) / BigInt(100);
+      expect(budget.remaining).to.equal(expectedRemaining);
+      
+      // Check total supply decreased by 75%
+      const burnedAmount = qiBudget * BigInt(75) / BigInt(100);
+      const finalSupply = await qiToken.totalSupply();
+      expect(finalSupply).to.equal(initialSupply - burnedAmount);
     });
   });
 });

@@ -51,7 +51,7 @@ export function useBlockchainEvents() {
             inputs: [
               { type: 'uint256', indexed: true, name: 'taskId' },
               { type: 'address', indexed: true, name: 'creator' },
-              { type: 'uint256', indexed: false, name: 'bounty' },
+              { type: 'uint256', indexed: false, name: 'fee' },
               { type: 'uint256', indexed: false, name: 'qiBudget' }
             ]
           },
@@ -74,15 +74,14 @@ export function useBlockchainEvents() {
           toBlock: 'latest'
         });
 
-        // Fetch bounty claimed events
-        const bountyClaimed = await publicClient.getLogs({
+        // Fetch fee claimed events
+        const feeClaimed = await publicClient.getLogs({
           address: CONTRACTS.TaskManager,
           event: {
             type: 'event',
-            name: 'BountyClaimed',
+            name: 'FeeClaimed',
             inputs: [
               { type: 'uint256', indexed: true, name: 'taskId' },
-              { type: 'address', indexed: true, name: 'recipient' },
               { type: 'uint256', indexed: false, name: 'amount' }
             ]
           },
@@ -111,7 +110,7 @@ export function useBlockchainEvents() {
           allEvents.push({
             id: `task-created-${log.blockNumber}-${log.logIndex}`,
             type: 'task_created',
-            description: `Task #${(log.args as any).taskId} created with ${Number((log.args as any).bounty) / 1e18} ETH bounty`,
+            description: `Task #${(log.args as any).taskId} created with ${Number((log.args as any).fee) / 1e18} ETH fee`,
             timestamp: new Date(Number(block.timestamp) * 1000),
             explorerLink: `#block-${log.blockNumber}`,
             blockNumber: log.blockNumber
@@ -131,13 +130,13 @@ export function useBlockchainEvents() {
           });
         }
 
-        // Process bounty claimed events
-        for (const log of bountyClaimed) {
+        // Process fee claimed events
+        for (const log of feeClaimed) {
           const block = await publicClient.getBlock({ blockNumber: log.blockNumber });
           allEvents.push({
-            id: `bounty-${log.blockNumber}-${log.logIndex}`,
+            id: `fee-${log.blockNumber}-${log.logIndex}`,
             type: 'payout',
-            description: `Task #${(log.args as any).taskId} payout: ${Number((log.args as any).amount) / 1e18} ETH`,
+            description: `Task #${(log.args as any).taskId} fee claimed: ${Number((log.args as any).amount) / 1e18} ETH`,
             timestamp: new Date(Number(block.timestamp) * 1000),
             explorerLink: `#block-${log.blockNumber}`,
             blockNumber: log.blockNumber

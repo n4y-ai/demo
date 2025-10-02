@@ -203,12 +203,12 @@ async function processTask(taskId, description, logosId) {
     const fulfillReceipt = await fulfillTx.wait();
     console.log('✅ Task fulfilled (Block:', fulfillReceipt.blockNumber, ')');
 
-    // Step 5: Claim bounty (wait a bit for state to settle)
-    console.log('5️⃣ Claiming bounty...');
+    // Step 5: Claim fee (wait a bit for state to settle)
+    console.log('5️⃣ Claiming fee...');
     await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-    const claimTx = await taskManager.claimBounty(taskId);
+    const claimTx = await taskManager.claimFee(taskId);
     const claimReceipt = await claimTx.wait();
-    console.log('✅ Bounty claimed (Block:', claimReceipt.blockNumber, ')');
+    console.log('✅ Fee claimed (Block:', claimReceipt.blockNumber, ')');
 
     console.log(`\n✨ Task #${taskId} completed successfully!\n`);
   } catch (error) {
@@ -258,7 +258,7 @@ async function startListening() {
           console.log('🔔 New task created!');
           console.log('  Task ID:', taskIdStr);
           console.log('  Creator:', event.args[1]);
-          console.log('  Bounty:', ethers.formatEther(event.args[2]), 'ETH');
+          console.log('  Fee:', ethers.formatEther(event.args[2]), 'ETH');
           console.log('  Block:', event.blockNumber);
 
           processedTasks.add(taskIdStr);

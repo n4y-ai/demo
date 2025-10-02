@@ -4,7 +4,7 @@ export const getMockTasks = (): Task[] => [
   {
     id: '1',
     description: 'Create a logo design for a DeFi protocol with modern aesthetics',
-    bounty: '0.1',
+    fee: '0.1',
     qiBudget: '50',
     status: 'Fulfilled',
     createdAt: new Date(Date.now() - 3600000),

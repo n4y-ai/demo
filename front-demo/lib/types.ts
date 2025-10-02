@@ -1,7 +1,7 @@
 export interface Task {
   id: string;
   description: string;
-  bounty: string;
+  fee: string;
   qiBudget: string;
   status: 'Created' | 'In Progress' | 'Fulfilled';
   createdAt: Date;

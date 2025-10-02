@@ -106,7 +106,7 @@ export default function BalanceWidget({}: BalanceWidgetProps) {
                 <div className="group relative">
                   <HelpCircle className="w-3 h-3 text-gray-500 hover:text-gray-300 cursor-help" />
                   <div className="absolute bottom-5 left-0 bg-gray-800 text-white text-xs rounded-lg p-2 w-48 opacity-0 group-hover:opacity-100 transition-opacity z-[9999] border border-gray-700">
-                    <strong>ETH:</strong> Used for network operations, gas fees, and task bounties. Unused bounty returns to your balance.
+                    <strong>ETH:</strong> Network operation fees. Platform claims 100% of fees to support infrastructure.
                   </div>
                 </div>
               </div>

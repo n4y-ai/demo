@@ -91,7 +91,7 @@ export default function LogosPanel({ onLogosCreated }: LogosPanelProps) {
         </div>
       )}
 
-      {hasLogos && logos && (
+      {hasLogos && !!logos && (
         <div className="space-y-4">
           <div className="flex items-center justify-center py-6">
             <CheckCircle className="w-12 h-12 text-green-400" />

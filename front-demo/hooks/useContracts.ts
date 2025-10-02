@@ -59,7 +59,7 @@ export function useCreateTask() {
   const createTask = async (
     description: string,
     qiBudget: bigint,
-    bountyAmount: string,
+    feeAmount: string,
     deadlineMinutes: number = 60
   ) => {
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineMinutes * 60);
@@ -69,7 +69,7 @@ export function useCreateTask() {
       abi: ABIS.TaskManager,
       functionName: 'createTask',
       args: [description, qiBudget, deadline],
-      value: parseEther(bountyAmount),
+      value: parseEther(feeAmount),
     });
   };
 

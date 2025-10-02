@@ -63,7 +63,7 @@ export default function Home() {
   const [pendingTask, setPendingTask] = useState<{
     description: string;
     qiAmount: bigint;
-    bounty: string;
+    fee: string;
   } | null>(null);
 
   // When approval is successful, create the task
@@ -72,7 +72,7 @@ export default function Home() {
       createTask(
         pendingTask.description,
         pendingTask.qiAmount,
-        pendingTask.bounty,
+        pendingTask.fee,
         60
       );
       setPendingTask(null);
@@ -81,7 +81,7 @@ export default function Home() {
 
   const handleTaskSubmit = async (taskData: {
     description: string;
-    bounty: string;
+    fee: string;
     qiBudget: string;
   }) => {
     try {
@@ -92,7 +92,7 @@ export default function Home() {
       setPendingTask({
         description: taskData.description,
         qiAmount,
-        bounty: taskData.bounty
+        fee: taskData.fee
       });
       
       // Approve QI tokens - task will be created after confirmation

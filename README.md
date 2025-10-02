@@ -212,7 +212,7 @@ Frontend auto-configured by deployment script.
 1. Open http://localhost:3000
 2. Connect wallet
 3. **Switch to Base Sepolia network** in wallet
-4. Create task with 0.001+ ETH bounty
+4. Create task with 0.001+ ETH fee
 5. Watch Event Feed for processing
 6. Click "View Result" when fulfilled
 

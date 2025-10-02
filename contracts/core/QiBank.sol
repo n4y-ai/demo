@@ -43,6 +43,7 @@ contract QiBank is ReentrancyGuard, Ownable {
     
     /**
      * @dev Allocate QI tokens for a task
+     * Burns 75% immediately, keeps 25% to return to user
      */
     function allocateQI(uint256 taskId, address user, uint256 amount) 
         external 
@@ -55,10 +56,19 @@ contract QiBank is ReentrancyGuard, Ownable {
         // Transfer QI from user to this contract
         require(qiToken.transferFrom(user, address(this), amount), "QiBank: Transfer failed");
         
+        // Burn 75% of tokens
+        uint256 burnAmount = (amount * 75) / 100;
+        uint256 keepAmount = amount - burnAmount;
+        
+        if (burnAmount > 0) {
+            qiToken.burn(burnAmount);
+            emit QIBurned(burnAmount, "Task allocation - 75% burn");
+        }
+        
         taskBudgets[taskId] = QiBudget({
             allocated: amount,
-            spent: 0,
-            remaining: amount,
+            spent: burnAmount,
+            remaining: keepAmount,
             isActive: true
         });
         
@@ -84,7 +94,7 @@ contract QiBank is ReentrancyGuard, Ownable {
     }
     
     /**
-     * @dev Refund unused QI tokens
+     * @dev Refund unused QI tokens (25% of original deposit)
      */
     function refundUnusedQI(uint256 taskId, address recipient) 
         external 
@@ -93,15 +103,15 @@ contract QiBank is ReentrancyGuard, Ownable {
     {
         QiBudget storage budget = taskBudgets[taskId];
         require(budget.isActive, "QiBank: No active budget");
-        require(budget.remaining > 0, "QiBank: No QI to refund");
         
         uint256 refundAmount = budget.remaining;
         budget.remaining = 0;
         budget.isActive = false;
         
-        require(qiToken.transfer(recipient, refundAmount), "QiBank: Refund failed");
-        
-        emit QIRefunded(taskId, recipient, refundAmount);
+        if (refundAmount > 0) {
+            require(qiToken.transfer(recipient, refundAmount), "QiBank: Refund failed");
+            emit QIRefunded(taskId, recipient, refundAmount);
+        }
     }
     
     /**

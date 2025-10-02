@@ -6,7 +6,7 @@ import { Send, Loader2, Info, HelpCircle } from 'lucide-react';
 interface TaskFormProps {
   onSubmit: (task: {
     description: string;
-    bounty: string;
+    fee: string;
     qiBudget: string;
   }) => void;
   disabled?: boolean;
@@ -16,17 +16,17 @@ export default function TaskForm({ onSubmit, disabled }: TaskFormProps) {
   const [description, setDescription] = useState('');
   const [qiBudget, setQiBudget] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [estimatedBounty, setEstimatedBounty] = useState('0.002');
+  const [estimatedFee, setEstimatedFee] = useState('0.002');
 
-  // Auto-calculate bounty based on estimated gas costs
+  // Auto-calculate fee based on estimated gas costs
   useEffect(() => {
-    // Simulate bounty calculation based on task complexity and gas estimates
+    // Simulate fee calculation based on task complexity and gas estimates
     const baseGas = 0.001; // Base transaction cost
     const complexityMultiplier = description.length > 100 ? 1.5 : 1.0;
     const qiComplexity = parseInt(qiBudget) > 50 ? 1.2 : 1.0;
     
     const calculated = (baseGas * complexityMultiplier * qiComplexity).toFixed(4);
-    setEstimatedBounty(calculated);
+    setEstimatedFee(calculated);
   }, [description, qiBudget]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,7 +39,7 @@ export default function TaskForm({ onSubmit, disabled }: TaskFormProps) {
     setTimeout(() => {
       onSubmit({
         description: description.trim(),
-        bounty: estimatedBounty,
+        fee: estimatedFee,
         qiBudget,
       });
       
@@ -81,7 +81,7 @@ export default function TaskForm({ onSubmit, disabled }: TaskFormProps) {
               <div className="group relative ml-2">
                 <HelpCircle className="w-4 h-4 text-gray-500 hover:text-gray-300 cursor-help" />
                 <div className="absolute bottom-6 left-0 bg-gray-800 text-white text-xs rounded-lg p-3 w-64 opacity-0 group-hover:opacity-100 transition-opacity z-[9999] border border-gray-700">
-                  <strong>QI Budget:</strong> Energy tokens consumed by AI inference. Higher budget = more complex AI processing. These tokens are spent and not returned.
+                  <strong>QI Budget:</strong> Tokens for AI inference. 75% are burned immediately, 25% returned after task completion.
                 </div>
               </div>
             </label>
@@ -101,16 +101,16 @@ export default function TaskForm({ onSubmit, disabled }: TaskFormProps) {
           {/* Auto-calculated Bounty Display */}
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2 flex items-center">
-              Network Bounty (Auto-calculated)
+              Network Fee (Auto-calculated)
               <div className="group relative ml-2">
                 <HelpCircle className="w-4 h-4 text-gray-500 hover:text-gray-300 cursor-help" />
                 <div className="absolute bottom-6 left-0 bg-gray-800 text-white text-xs rounded-lg p-3 w-64 opacity-0 group-hover:opacity-100 transition-opacity z-[9999] border border-gray-700">
-                  <strong>Network Bounty:</strong> ETH reserved for blockchain operations (gas fees, storage, etc.). Auto-calculated based on task complexity. Unused portion returns to your balance.
+                  <strong>Network Fee:</strong> ETH for network operations (gas, storage). Platform claims 100% of this fee. Auto-calculated based on task complexity.
                 </div>
               </div>
             </label>
             <div className="w-full bg-gray-800/30 border border-gray-700 rounded-lg px-3 py-2 text-white flex items-center justify-between">
-              <span>{estimatedBounty} ETH</span>
+              <span>{estimatedFee} ETH</span>
               <Info className="w-4 h-4 text-blue-400" />
             </div>
             <p className="text-xs text-gray-500 mt-1">Includes gas fees + network operations</p>
@@ -122,17 +122,17 @@ export default function TaskForm({ onSubmit, disabled }: TaskFormProps) {
           <h4 className="text-sm font-medium text-white mb-2">Total Estimated Cost</h4>
           <div className="space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-gray-400">QI Energy (consumed):</span>
+              <span className="text-gray-400">QI Energy (75% burned):</span>
               <span className="text-yellow-400">{qiBudget || '0'} QI</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">Network Bounty (reserved):</span>
-              <span className="text-blue-400">{estimatedBounty} ETH</span>
+              <span className="text-gray-400">Network Fee (platform):</span>
+              <span className="text-blue-400">{estimatedFee} ETH</span>
             </div>
             <hr className="border-gray-600" />
             <div className="flex justify-between font-medium">
               <span className="text-white">You pay:</span>
-              <span className="text-white">{qiBudget || '0'} QI + {estimatedBounty} ETH</span>
+              <span className="text-white">{qiBudget || '0'} QI + {estimatedFee} ETH</span>
             </div>
           </div>
         </div>
